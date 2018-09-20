@@ -12,15 +12,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
----------------------------------------------------------------------
-The first step in creating a cryptographic hash lookup table.
-Creates a file of the following format:
-
-    [HASH_PART][WORDLIST_OFFSET][HASH_PART][WORDLIST_OFFSET]...
-
-HASH_PART is the first 64 BITS of the hash, right-padded with zeroes if
-necessary.  WORDLIST_OFFSET is the position of the first character of the
-word in the dictionary encoded as a 48-bit LITTLE ENDIAN integer.
 '''
 
 import sys
