@@ -110,7 +110,7 @@ class Sha1(BaseAlgorithm):
 class Sha224(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 2 (224 bit)'
-    key = 'sha2-224'
+    key = 'sha2_224'
     hex_length = 56
 
     def digest(self):
@@ -120,7 +120,7 @@ class Sha224(BaseAlgorithm):
 class Sha256(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 2 (256 bit)'
-    key = 'sha2-256'
+    key = 'sha2_256'
     hex_length = 64
 
     def digest(self):
@@ -130,7 +130,7 @@ class Sha256(BaseAlgorithm):
 class Sha384(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 2 (384 bit)'
-    key = 'sha2-384'
+    key = 'sha2_384'
     hex_length = 96
 
     def digest(self):
@@ -140,7 +140,7 @@ class Sha384(BaseAlgorithm):
 class Sha512(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 2 (512 bit)'
-    key = 'sha2-512'
+    key = 'sha2_512'
     hex_length = 128
 
     def digest(self):
@@ -165,7 +165,7 @@ class Ripemd160(BaseAlgorithm):
 class Sha3_224(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 3 (224 bit)'
-    key = 'sha3-224'
+    key = 'sha3_224'
     hex_length = 56
 
     def digest(self):
@@ -175,7 +175,7 @@ class Sha3_224(BaseAlgorithm):
 class Sha3_256(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 3 (256 bit)'
-    key = 'sha3-256'
+    key = 'sha3_256'
     hex_length = 64
 
     def digest(self):
@@ -185,7 +185,7 @@ class Sha3_256(BaseAlgorithm):
 class Sha3_384(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 3 (384 bit)'
-    key = 'sha3-384'
+    key = 'sha3_384'
     hex_length = 96
 
     def digest(self):
@@ -195,7 +195,7 @@ class Sha3_384(BaseAlgorithm):
 class Sha3_512(BaseAlgorithm):
 
     name = 'Secure Hashing Algorithm 3 (512 bit)'
-    key = 'sha3-512'
+    key = 'sha3_512'
     hex_length = 128
 
     def digest(self):
@@ -262,14 +262,14 @@ class Oracle10(BaseAlgorithm):
 class Oracle10_Sys(Oracle10):
 
     name = 'Oracle 10g (SYS)'
-    key = 'oracle10g-sys'
+    key = 'oracle10g_sys'
     _user = 'SYS'
 
 
 class Oracle10_System(Oracle10):
 
     name = 'Oracle 10g (SYSTEM)'
-    key = 'oracle10g-system'
+    key = 'oracle10g_system'
     _user = 'SYSTEM'
 
 
@@ -286,28 +286,28 @@ class PostgresMd5(BaseAlgorithm):
 class PostgresMd5_Root(PostgresMd5):
 
     name = 'Postgres MD5 (root)'
-    key = 'postgres_md5-root'
+    key = 'postgres_md5_root'
     _user = 'root'
 
 
 class PostgresMd5_Postgres(PostgresMd5):
 
     name = 'Postgres MD5 (postgres)'
-    key = 'postgres_md5-postgres'
+    key = 'postgres_md5_postgres'
     _user = 'postgres'
 
 
 class PostgresMd5_Admin(PostgresMd5):
 
     name = 'Postgres MD5 (admin)'
-    key = 'postgres_md5-admin'
+    key = 'postgres_md5_admin'
     _user = 'admin'
 
 
 class Msdcc_Administrator(BaseAlgorithm):
 
     name = 'MS Domain Cached Credentials'
-    key = 'msdcc-administrator'
+    key = 'msdcc_administrator'
     hex_length = 32
     _user = "administrator"
 
@@ -318,7 +318,7 @@ class Msdcc_Administrator(BaseAlgorithm):
 class Msdcc2_Administrator(BaseAlgorithm):
 
     name = 'MS Domain Cached Credentials v2'
-    key = 'msdcc2-administrator'
+    key = 'msdcc2_administrator'
     hex_length = 32
     _user = "administrator"
 

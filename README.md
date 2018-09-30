@@ -1,7 +1,7 @@
 Big Rainbow
 ============
 
-BigQuery based rainbow tables.
+BigQuery based rainbow tables, and various other small tools an hacks.
 
 ### GPL v3
 

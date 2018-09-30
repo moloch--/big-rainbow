@@ -30,6 +30,7 @@ import (
 	"sync"
 )
 
+// Entry - Rainbow table entry
 type Entry struct {
 	Preimage string `json:"preimage"`
 	Md5      string `json:"md5"`
@@ -106,7 +107,10 @@ func computeFile(input string, output string) {
 	for scanner.Scan() {
 		word := scanner.Text()
 		wg.Add(1)
+
+		// parallel-ish
 		go computeEntry(word, fOutput, &wg)
+
 		counter++
 		fmt.Printf("\rGo compute: %d", counter)
 	}

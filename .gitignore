@@ -1,5 +1,7 @@
 *.exe
 *.json
+*.txt
 
 big-rainbow
 __pycache__/*
+
