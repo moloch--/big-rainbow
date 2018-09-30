@@ -23,10 +23,11 @@ from string import printable
 class KeyspaceGenerator(object):
 
     MAX_SEED_LENGTH = 8
+    DEFAULT_CHARSET = printable[:-5]
 
     def __init__(self, seed=None, stop=None, charset=None):
-        self._generated = 0
-        self.charset = charset if charset is not None else printable[:-5]
+        self.generated = 0
+        self.charset = charset if charset is not None else self.DEFAULT_CHARSET
         self.charmax = len(self.charset)
         self.stop = stop
         self._value = seed if seed is not None else self.charset[0]
@@ -34,6 +35,18 @@ class KeyspaceGenerator(object):
             raise TypeError('Seed must be a string')
         if self.MAX_SEED_LENGTH < len(self._value):
             raise ValueError('Max seed length is %d' % self.MAX_SEED_LENGTH)
+
+    def keyspace_length(self):
+        return len(self.charset) ** len(self._value)
+
+    @classmethod
+    def to_base_n(cls, x, charset):
+        ''' Convert a number `x` to base `n` where `n` is the length of the charset '''
+        base = len(charset)
+        if x < base:
+            return charset[x]
+        else:
+            return cls.to_base_n(x // base, charset) + charset[x % base]
 
     def _char_indexes(self):
         ''' Get the indexes of each char in the current value '''
@@ -65,20 +78,21 @@ class KeyspaceGenerator(object):
 
     def __iter__(self):
         ''' Iterate over the entire keyspace starting at `seed` (inclusive) '''
-        if self._generated == 0:
+        if self.generated == 0:
             yield self._value
         while not self._is_keyspace_limit():
             char_indexes = self._char_indexes()
             next_char_indexes = self._next_char_indexes(char_indexes)
             next_value = self._char_indexes_to_str(next_char_indexes)
             self._value = next_value
-            self._generated += 1
+            self.generated += 1
             yield next_value
-            
+
 
 if __name__ == '__main__':
     seed = sys.argv[1] if len(sys.argv) == 2 else '00'
     print('Generating from seed: %s' % seed)
     keygen = KeyspaceGenerator(seed)
     for value in keygen:
-        print('Value = %s' % value)
+        print("%d = %s" % (keygen.generated, value))
+    print('Generated %d values' % keygen.generated)
