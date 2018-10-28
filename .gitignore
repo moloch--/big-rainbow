@@ -1,7 +1,10 @@
 *.exe
 *.json
-*.txt
+.DS_Store
 
-big-rainbow
 __pycache__/*
 
+./rainbow_hash
+
+
+generated_keyspace_*
