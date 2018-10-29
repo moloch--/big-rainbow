@@ -64,9 +64,13 @@ func IsSupportedAlgorithm(algorithm string) bool {
 }
 
 // It's up to the caller to make sure these parameters are legit, table is pulled
-// from an ENV var and algorithm should be whitelisted, so mostly safe from sqli
+// from an ENV var and algorithm should be whitelisted, so should be safe from sqli
 func getRawQuery(table string, algorithm string, params int) string {
-	qParams := strings.Repeat("? ", params)
+	qParams := "?"
+	if 1 < params {
+		// BigQuery can't have any trailing ','s
+		qParams = strings.Join([]string{qParams, strings.Repeat(", ?", params-1)}, "")
+	}
 	return fmt.Sprintf("SELECT preimage,%s FROM `%s` WHERE md5 in (%s)", algorithm, table, qParams)
 }
 
