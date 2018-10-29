@@ -80,6 +80,7 @@ func RequestHandler(request events.APIGatewayProxyRequest) (events.APIGatewayPro
 		return JSONError(errUnsupportedAlgorithm), nil
 	}
 
+	unique(&querySet)
 	if len(querySet.Hashes) == 0 {
 		return JSONError(errNoHashes), nil
 	}
@@ -98,6 +99,21 @@ func RequestHandler(request events.APIGatewayProxyRequest) (events.APIGatewayPro
 		Body:       string(response),
 		StatusCode: 200,
 	}, nil
+}
+
+// Remove any duplicate/blank hashes
+func unique(querySet *QuerySet) {
+	uniqueValues := make(map[string]bool)
+	for _, value := range querySet.Hashes {
+		if 0 < len(value) {
+			uniqueValues[value] = true
+		}
+	}
+	var keys []string
+	for key := range uniqueValues {
+		keys = append(keys, key)
+	}
+	querySet.Hashes = keys
 }
 
 func main() {

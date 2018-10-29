@@ -43,7 +43,7 @@ type ResultSet struct {
 	Results   []Result `json:"results"`
 }
 
-// BigQueryMeta - ??
+// BigQueryMeta - BigQuery metadata info
 type BigQueryMeta struct {
 	ProjectID   string
 	Table       string
@@ -52,7 +52,30 @@ type BigQueryMeta struct {
 
 var (
 	supportedAlgorithms = map[string]bool{
-		"md5": true,
+		"md4":                   true,
+		"md5":                   true,
+		"sha1":                  true,
+		"sha2_224":              true,
+		"sha2_256":              true,
+		"sha2_384":              true,
+		"sha2_512":              true,
+		"sha3_224":              true,
+		"sha3_256":              true,
+		"sha3_384":              true,
+		"sha3_512":              true,
+		"ripemd160":             true,
+		"lm":                    true,
+		"ntlm":                  true,
+		"mysql323":              true,
+		"mysql41":               true,
+		"oracle10g_sys":         true,
+		"oracle10g_system":      true,
+		"msdcc_administrator":   true,
+		"msdcc2_administrator":  true,
+		"postgres_md5_admin":    true,
+		"postgres_md5_postgres": true,
+		"postgres_md5_root":     true,
+		"whirlpool":             true,
 	}
 )
 
@@ -70,10 +93,10 @@ func getRawQuery(table string, algorithm string, params int) string {
 		// BigQuery can't have any trailing ','s
 		qParams = strings.Join([]string{qParams, strings.Repeat(", ?", params-1)}, "")
 	}
-	return fmt.Sprintf("SELECT preimage,%s FROM `%s` WHERE md5 in (%s)", algorithm, table, qParams)
+	return fmt.Sprintf("SELECT preimage,%s FROM `%s` WHERE %s in (%s)", algorithm, table, algorithm, qParams)
 }
 
-// BigRainbowQuery -
+// BigRainbowQuery - Execute a BigQuery query searaching for a querySet
 func BigRainbowQuery(bigQueryMeta BigQueryMeta, querySet QuerySet) (ResultSet, error) {
 
 	bigQueryCtx := context.Background()
