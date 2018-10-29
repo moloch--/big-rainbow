@@ -17,9 +17,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -44,32 +47,69 @@ type ResultSet struct {
 // BigQueryMeta - ??
 type BigQueryMeta struct {
 	ProjectID   string
-	DatasetID   string
-	TableID     string
+	Table       string
 	Credentials string
 }
 
-// BigRainbowQuery -
-func BigRainbowQuery(bigQueryMeta BigQueryMeta, hashes QuerySet) (ResultSet, error) {
+var (
+	supportedAlgorithms = map[string]bool{
+		"md5": true,
+	}
+)
 
-	log.Printf("QuerySet = %v", hashes)
+// IsSupportedAlgorithm - Bool
+func IsSupportedAlgorithm(algorithm string) bool {
+	_, ok := supportedAlgorithms[algorithm]
+	return ok
+}
+
+// It's up to the caller to make sure these parameters are legit, table is pulled
+// from an ENV var and algorithm should be whitelisted, so mostly safe from sqli
+func getRawQuery(table string, algorithm string, params int) string {
+	qParams := strings.Repeat("? ", params)
+	return fmt.Sprintf("SELECT preimage,%s FROM `%s` WHERE md5 in (%s)", algorithm, table, qParams)
+}
+
+// BigRainbowQuery -
+func BigRainbowQuery(bigQueryMeta BigQueryMeta, querySet QuerySet) (ResultSet, error) {
+
+	log.Printf("QuerySet = %v", querySet)
 
 	bigQueryCtx := context.Background()
 	creds := []byte(bigQueryMeta.Credentials)
 	bigQueryClient, err := bigquery.NewClient(bigQueryCtx, bigQueryMeta.ProjectID, option.WithCredentialsJSON(creds))
 
-	bigQuery := bigQueryClient.Query(`
-		SELECT primage,md5
-		FROM [rainbow1.crackstation_human_only]
-		WHERE md5 = 'X03MO1qnZdYdgyfeuILPmQ=='`)
-
-	results, err := bigQuery.Read(bigQueryCtx)
-
-	log.Printf("Results = %v", results)
-
+	rawQuery := getRawQuery(bigQueryMeta.Table, querySet.Algorithm, len(querySet.Hashes))
+	log.Printf("RawQuery = %s", rawQuery)
+	bigQuery := bigQueryClient.Query(rawQuery)
+	var params []bigquery.QueryParameter
+	for _, hash := range querySet.Hashes {
+		params = append(params, bigquery.QueryParameter{
+			Value: hash,
+		})
+	}
+	bigQuery.Parameters = params
+	bigQueryResults, err := bigQuery.Read(bigQueryCtx)
 	if err != nil {
 		return ResultSet{}, err
 	}
 
-	return ResultSet{}, nil
+	resultSet := ResultSet{
+		Algorithm: querySet.Algorithm,
+		Results:   []Result{},
+	}
+	for {
+		var row []bigquery.Value
+		err := bigQueryResults.Next(&row)
+		if err == iterator.Done {
+			break
+		}
+		result := Result{
+			Preimage: fmt.Sprintf("%s", row[0]),
+			Hash:     fmt.Sprintf("%s", row[1]),
+		}
+		resultSet.Results = append(resultSet.Results, result)
+	}
+
+	return resultSet, nil
 }

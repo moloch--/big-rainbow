@@ -28,13 +28,16 @@ import (
 
 var (
 	bigQueryMeta = BigQueryMeta{
+		Table:       os.Getenv("BIGQUERY_TABLE"),
+		ProjectID:   os.Getenv("BIGQUERY_PROJECT_ID"),
 		Credentials: os.Getenv("BIGQUERY_CREDENTIALS"),
 	}
 
 	// Generic Errors
-	errNoBody            = errors.New("no HTTP body")
-	errFailedToParseBody = errors.New("failed to parse HTTP body")
-	errNoHashes          = errors.New("No hashes in request")
+	errNoBody               = errors.New("no HTTP body")
+	errFailedToParseBody    = errors.New("failed to parse HTTP body")
+	errNoHashes             = errors.New("No hashes in request")
+	errUnsupportedAlgorithm = errors.New("Unsupported hash algorithm")
 )
 
 // LambdaError - Error mapped to JSON
@@ -43,6 +46,9 @@ type LambdaError struct {
 }
 
 // JSONError - Returns an error formatted as an APIGatewayProxyResponse
+// if you try to return an actual error the API Gateway just swaps it
+// for a generic 500 because why the fuck would you just expect an error
+// to get returned to the client if you explicitly return it
 func JSONError(err error) events.APIGatewayProxyResponse {
 	msg, _ := json.Marshal(LambdaError{
 		Error: fmt.Sprintf("%v", err),
@@ -68,6 +74,10 @@ func RequestHandler(request events.APIGatewayProxyRequest) (events.APIGatewayPro
 	err := json.Unmarshal([]byte(request.Body), &querySet)
 	if err != nil {
 		return JSONError(errFailedToParseBody), nil
+	}
+
+	if !IsSupportedAlgorithm(querySet.Algorithm) {
+		return JSONError(errUnsupportedAlgorithm), nil
 	}
 
 	if len(querySet.Hashes) == 0 {
