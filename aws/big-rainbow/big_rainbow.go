@@ -16,27 +16,78 @@ package main
 */
 
 import (
-	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
-	bigQueryAPIKey    = os.Getenv("BIGQUERY_API_KEY")
-	bigQueryProjectID = os.Getenv("BIGQUERY_PROJECT_ID")
+	bigQueryMeta = BigQueryMeta{
+		Credentials: os.Getenv("BIGQUERY_CREDENTIALS"),
+	}
+
+	// Generic Errors
+	errNoBody            = errors.New("no HTTP body")
+	errFailedToParseBody = errors.New("failed to parse HTTP body")
+	errNoHashes          = errors.New("No hashes in request")
 )
 
-// Event -
-type Event struct {
-	Name string `json:"name"`
+// LambdaError - Error mapped to JSON
+type LambdaError struct {
+	Error string `json:"error"`
+}
+
+// JSONError - Returns an error formatted as an APIGatewayProxyResponse
+func JSONError(err error) events.APIGatewayProxyResponse {
+	msg, _ := json.Marshal(LambdaError{
+		Error: fmt.Sprintf("%v", err),
+	})
+	return events.APIGatewayProxyResponse{
+		StatusCode: 400,
+		Body:       string(msg),
+	}
 }
 
 // RequestHandler - Handle an HTTP request
-func RequestHandler(lambdaCtx context.Context, event Event) (string, error) {
+func RequestHandler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-	return fmt.Sprintf("Hello %s!", event.Name), nil
+	log.Printf("Processing Lambda request %s\n", request.RequestContext.RequestID)
+
+	// If no name is provided in the HTTP request body, throw an error
+	if len(request.Body) < 1 {
+		return JSONError(errNoBody), nil
+	}
+
+	log.Printf("Parsing request body ...")
+	var querySet QuerySet
+	err := json.Unmarshal([]byte(request.Body), &querySet)
+	if err != nil {
+		return JSONError(errFailedToParseBody), nil
+	}
+
+	if len(querySet.Hashes) == 0 {
+		return JSONError(errNoHashes), nil
+	}
+
+	resultSet, err := BigRainbowQuery(bigQueryMeta, querySet)
+	if err != nil {
+		return JSONError(err), nil
+	}
+
+	response, err := json.Marshal(resultSet)
+	if err != nil {
+		return JSONError(err), nil
+	}
+
+	return events.APIGatewayProxyResponse{
+		Body:       string(response),
+		StatusCode: 200,
+	}, nil
 }
 
 func main() {

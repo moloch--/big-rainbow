@@ -17,8 +17,10 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/option"
 )
 
 // QuerySet - A set of base64 encoded password hashes to query with
@@ -39,23 +41,34 @@ type ResultSet struct {
 	Results   []Result `json:"results"`
 }
 
+// BigQueryMeta - ??
+type BigQueryMeta struct {
+	ProjectID   string
+	DatasetID   string
+	TableID     string
+	Credentials string
+}
+
 // BigRainbowQuery -
-func BigRainbowQuery(hashes QuerySet, projectID string) (ResultSet, error) {
+func BigRainbowQuery(bigQueryMeta BigQueryMeta, hashes QuerySet) (ResultSet, error) {
+
+	log.Printf("QuerySet = %v", hashes)
 
 	bigQueryCtx := context.Background()
-	bigQueryClient, err := bigquery.NewClient(bigQueryCtx, projectID)
+	creds := []byte(bigQueryMeta.Credentials)
+	bigQueryClient, err := bigquery.NewClient(bigQueryCtx, bigQueryMeta.ProjectID, option.WithCredentialsJSON(creds))
 
-	query := bigQueryClient.Query(`
-    SELECT year, SUM(number) as num
-    FROM [bigquery-public-data:usa_names.usa_1910_2013]
-    WHERE name = "William"
-    GROUP BY year
-    ORDER BY year`)
+	bigQuery := bigQueryClient.Query(`
+		SELECT primage,md5
+		FROM [rainbow1.crackstation_human_only]
+		WHERE md5 = 'X03MO1qnZdYdgyfeuILPmQ=='`)
 
-	_, err = query.Read(bigQueryCtx)
+	results, err := bigQuery.Read(bigQueryCtx)
+
+	log.Printf("Results = %v", results)
 
 	if err != nil {
-		// TODO: Handle error.
+		return ResultSet{}, err
 	}
 
 	return ResultSet{}, nil
