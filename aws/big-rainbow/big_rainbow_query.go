@@ -18,7 +18,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"cloud.google.com/go/bigquery"
@@ -77,14 +76,12 @@ func getRawQuery(table string, algorithm string, params int) string {
 // BigRainbowQuery -
 func BigRainbowQuery(bigQueryMeta BigQueryMeta, querySet QuerySet) (ResultSet, error) {
 
-	log.Printf("QuerySet = %v", querySet)
-
 	bigQueryCtx := context.Background()
 	creds := []byte(bigQueryMeta.Credentials)
 	bigQueryClient, err := bigquery.NewClient(bigQueryCtx, bigQueryMeta.ProjectID, option.WithCredentialsJSON(creds))
 
 	rawQuery := getRawQuery(bigQueryMeta.Table, querySet.Algorithm, len(querySet.Hashes))
-	log.Printf("RawQuery = %s", rawQuery)
+
 	bigQuery := bigQueryClient.Query(rawQuery)
 	var params []bigquery.QueryParameter
 	for _, hash := range querySet.Hashes {

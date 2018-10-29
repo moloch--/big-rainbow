@@ -56,7 +56,7 @@ def create_index(fword, fout, hash_algorithms, flock):
     ''' Create an index and write to file '''
     line = fword.readline()
     while line:
-        word = line.strip()
+        word = line[:-1] if line.endswith('\n') else line
         try:
             results = {"preimage": word.decode()}
             for name, algo in hash_algorithms.items():
