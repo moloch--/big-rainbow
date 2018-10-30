@@ -46,7 +46,7 @@ const (
 
 	INFO = Bold + Cyan + "[*] " + Normal
 	WARN = Bold + Red + "[!] " + Normal
-	MEH  = Bold + Purple + "[-] " + Normal
+	READ = Bold + Purple + "[?] " + Normal
 	WOOT = Bold + Green + "[$] " + Normal
 )
 
@@ -151,9 +151,9 @@ func getConfig() (BigRainbowConfig, error) {
 	if err != nil {
 		fmt.Printf("%sError: %v\n", WARN, err)
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("[?] URL: ")
+		fmt.Print(READ + "URL: ")
 		url, _ := reader.ReadString('\n')
-		fmt.Print("[?] Key: ")
+		fmt.Print(READ + "Key: ")
 		key, _ := reader.ReadString('\n')
 		config.URL = strings.TrimSpace(url)
 		config.Key = strings.TrimSpace(key)
@@ -169,6 +169,7 @@ func readConfig() (BigRainbowConfig, error) {
 	configPath := path.Join(usr.HomeDir, configDirName, configFileName)
 
 	jsonFile, err := os.Open(configPath)
+	defer jsonFile.Close()
 	if err != nil {
 		return config, err
 	}
@@ -242,7 +243,7 @@ func displaySpinner(hashCount int, done <-chan bool) {
 func displayResults(querySet QuerySet, resultSet ResultSet) {
 	fmt.Printf(INFO+"Cracked %d of %d hashes\n", len(resultSet.Results), len(querySet.Hashes))
 	for _, result := range resultSet.Results {
-		fmt.Printf(" %s | %s \n", result.Hash, result.Preimage)
+		fmt.Printf(" %s -> %s \n", result.Hash, result.Preimage)
 	}
 }
 
@@ -282,7 +283,7 @@ func bigRainbowQuery(config BigRainbowConfig, querySet QuerySet) (ResultSet, err
 		return resultSet, nil
 	} else if resp.StatusCode == 400 {
 		var bigQueryError BigRainbowError
-		json.Unmarshal(body, bigQueryError)
+		json.Unmarshal(body, &bigQueryError)
 		return ResultSet{}, errors.New(bigQueryError.Error)
 	} else {
 		return ResultSet{}, fmt.Errorf("Unknown error (%d)", resp.StatusCode)
