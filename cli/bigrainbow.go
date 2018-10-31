@@ -28,26 +28,28 @@ const (
 
 	jsonMime = "application/json"
 
-	HTTPTimeout = 60
+	normal = "\033[0m"
+	black  = "\033[30m"
+	red    = "\033[31m"
+	green  = "\033[32m"
+	orange = "\033[33m"
+	blue   = "\033[34m"
+	purple = "\033[35m"
+	cyan   = "\033[36m"
+	gray   = "\033[37m"
+	bold   = "\033[1m"
+	clear  = "\r\x1b[2K"
+	upN    = "\033[%dA"
+	downN  = "\033[%dB"
 
-	Normal = "\033[0m"
-	Black  = "\033[30m"
-	Red    = "\033[31m"
-	Green  = "\033[32m"
-	Orange = "\033[33m"
-	Blue   = "\033[34m"
-	Purple = "\033[35m"
-	Cyan   = "\033[36m"
-	Gray   = "\033[37m"
-	Bold   = "\033[1m"
-	Clear  = "\r\x1b[2K"
-	UpN    = "\033[%dA"
-	DownN  = "\033[%dB"
-
-	INFO = Bold + Cyan + "[*] " + Normal
-	WARN = Bold + Red + "[!] " + Normal
-	READ = Bold + Purple + "[?] " + Normal
-	WOOT = Bold + Green + "[$] " + Normal
+	// INFO - Informational prompt
+	INFO = bold + cyan + "[*] " + normal
+	// WARN - Warn prompt
+	WARN = bold + red + "[!] " + normal
+	// READ - Read from user prompt
+	READ = bold + purple + "[?] " + normal
+	// WOOT - Success prompt
+	WOOT = bold + green + "[$] " + normal
 )
 
 var spinner = []string{
@@ -106,7 +108,7 @@ func main() {
 
 	flag.Usage = func() {
 		fmt.Println()
-		fmt.Println(Bold + "Usage " + Normal + "bigrainbow -a <algorithm> [options] hash...")
+		fmt.Println(bold + "Usage " + normal + "bigrainbow -a <algorithm> [options] hash...")
 		flag.PrintDefaults()
 	}
 
@@ -134,6 +136,7 @@ func main() {
 
 }
 
+// Convert hex encoded hashes to base64
 func hexToBase64(hashes []string) []string {
 	var base64Hashes []string
 	for _, hash := range hashes {
@@ -146,6 +149,7 @@ func hexToBase64(hashes []string) []string {
 	return base64Hashes
 }
 
+// Create a config or read the existing one
 func getConfig() (BigRainbowConfig, error) {
 	config, err := readConfig()
 	if err != nil {
@@ -162,6 +166,7 @@ func getConfig() (BigRainbowConfig, error) {
 	return config, err
 }
 
+// Read config from file
 func readConfig() (BigRainbowConfig, error) {
 	config := BigRainbowConfig{}
 
@@ -181,6 +186,7 @@ func readConfig() (BigRainbowConfig, error) {
 	return config, nil
 }
 
+// Write config to file and create directories
 func writeConfig(config BigRainbowConfig) error {
 
 	usr, _ := user.Current()
@@ -211,6 +217,7 @@ func unique(values []string) []string {
 	return keys
 }
 
+// Read hashes from newline delimited file
 func readHashesFromFile(filePath string) []string {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -226,6 +233,7 @@ func readHashesFromFile(filePath string) []string {
 	return lines
 }
 
+// Displays our terminal spinner until done channel recvs
 func displaySpinner(hashCount int, done <-chan bool) {
 	counter := 0
 	for {
@@ -233,13 +241,14 @@ func displaySpinner(hashCount int, done <-chan bool) {
 		case <-done:
 			return
 		case <-time.After(25 * time.Millisecond):
-			fmt.Printf(Clear+"%s cracking %d hashes, please wait...",
+			fmt.Printf(clear+"%s cracking %d hashes, please wait...",
 				string(spinner[counter%len(spinner)]), hashCount)
 			counter++
 		}
 	}
 }
 
+// Display results of cracking hashes
 func displayResults(querySet QuerySet, resultSet ResultSet) {
 	fmt.Printf(INFO+"Cracked %d of %d hashes\n", len(resultSet.Results), len(querySet.Hashes))
 	for _, result := range resultSet.Results {
@@ -247,6 +256,7 @@ func displayResults(querySet QuerySet, resultSet ResultSet) {
 	}
 }
 
+// Crack a slice of hashings with a config
 func bigRainbowCrack(config BigRainbowConfig, algorithm string, hashes []string) {
 
 	done := make(chan bool)
@@ -258,7 +268,7 @@ func bigRainbowCrack(config BigRainbowConfig, algorithm string, hashes []string)
 	}
 	resultSet, err := bigRainbowQuery(config, querySet)
 	done <- true
-	fmt.Print(Clear)
+	fmt.Print(clear)
 	if err != nil {
 		fmt.Printf(WARN+"Error: %v", err)
 	} else {
@@ -266,13 +276,14 @@ func bigRainbowCrack(config BigRainbowConfig, algorithm string, hashes []string)
 	}
 }
 
+// Send the HTTP POST request to the API Gateway/AWS Lambda
 func bigRainbowQuery(config BigRainbowConfig, querySet QuerySet) (ResultSet, error) {
 
 	reqBody, _ := json.Marshal(querySet)
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", config.URL, bytes.NewBuffer(reqBody))
 	req.Header.Set("x-api-key", config.Key)
-	req.Header.Set("Content-type", jsonMime)
+	req.Header.Set("content-type", jsonMime)
 
 	resp, _ := client.Do(req)
 
@@ -282,9 +293,9 @@ func bigRainbowQuery(config BigRainbowConfig, querySet QuerySet) (ResultSet, err
 		json.Unmarshal(body, &resultSet)
 		return resultSet, nil
 	} else if resp.StatusCode == 400 {
-		var bigQueryError BigRainbowError
-		json.Unmarshal(body, &bigQueryError)
-		return ResultSet{}, errors.New(bigQueryError.Error)
+		var errBigRainbow BigRainbowError
+		json.Unmarshal(body, &errBigRainbow)
+		return ResultSet{}, errors.New(errBigRainbow.Error)
 	} else {
 		return ResultSet{}, fmt.Errorf("Unknown error (%d)", resp.StatusCode)
 	}

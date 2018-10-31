@@ -49,6 +49,8 @@ type LambdaError struct {
 // if you try to return an actual error the API Gateway just swaps it
 // for a generic 500 because why the fuck would you just expect an error
 // to get returned to the client if you explicitly return it
+// this is also sort of dangerous because we don't always know what the
+// error message is going to say but you shouldn't expose this publically
 func JSONError(err error) events.APIGatewayProxyResponse {
 	msg, _ := json.Marshal(LambdaError{
 		Error: fmt.Sprintf("%v", err),

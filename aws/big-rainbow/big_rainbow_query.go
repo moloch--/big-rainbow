@@ -93,15 +93,16 @@ func getRawQuery(table string, algorithm string, params int) string {
 		// BigQuery can't have any trailing ','s
 		qParams = strings.Join([]string{qParams, strings.Repeat(", ?", params-1)}, "")
 	}
-	return fmt.Sprintf("SELECT preimage,%s FROM `%s` WHERE %s in (%s)", algorithm, table, algorithm, qParams)
+	return fmt.Sprintf("SELECT preimage,%s FROM `%s` WHERE %s in (%s)",
+		algorithm, table, algorithm, qParams)
 }
 
 // BigRainbowQuery - Execute a BigQuery query searaching for a querySet
 func BigRainbowQuery(bigQueryMeta BigQueryMeta, querySet QuerySet) (ResultSet, error) {
 
 	bigQueryCtx := context.Background()
-	creds := []byte(bigQueryMeta.Credentials)
-	bigQueryClient, err := bigquery.NewClient(bigQueryCtx, bigQueryMeta.ProjectID, option.WithCredentialsJSON(creds))
+	options := option.WithCredentialsJSON([]byte(bigQueryMeta.Credentials))
+	bigQueryClient, err := bigquery.NewClient(bigQueryCtx, bigQueryMeta.ProjectID, options)
 
 	rawQuery := getRawQuery(bigQueryMeta.Table, querySet.Algorithm, len(querySet.Hashes))
 

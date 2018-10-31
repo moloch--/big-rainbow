@@ -3,6 +3,13 @@ Big Rainbow
 
 BigQuery based rainbow tables, and various other small tools/hacks.
 
+### CLI
+
+Command line interface
+
+### AWS
+
+Lambda function
 
 ### GPL v3
 
