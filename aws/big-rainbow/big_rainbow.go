@@ -16,6 +16,7 @@ package main
 */
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -83,6 +84,7 @@ func RequestHandler(request events.APIGatewayProxyRequest) (events.APIGatewayPro
 	}
 
 	unique(&querySet)
+	truncate(&querySet)
 	if len(querySet.Hashes) == 0 {
 		return JSONError(errNoHashes), nil
 	}
@@ -116,6 +118,24 @@ func unique(querySet *QuerySet) {
 		keys = append(keys, key)
 	}
 	querySet.Hashes = keys
+}
+
+func truncate(querySet *QuerySet) {
+	var hashes []string
+	for _, value := range querySet.Hashes {
+		data, err := base64.StdEncoding.DecodeString(value)
+		if err != nil {
+			log.Printf("Skipping invalid base64 value: '%s'", value)
+			continue
+		}
+		if len(data) < 6 {
+			log.Printf("Skipping value, too short: '%s'", value)
+			continue
+		}
+		hash := base64.StdEncoding.EncodeToString(data[:6])
+		hashes = append(hashes, hash)
+	}
+	querySet.Hashes = hashes
 }
 
 func main() {

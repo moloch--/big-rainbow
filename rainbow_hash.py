@@ -51,16 +51,18 @@ WARN = bold + R + "[!] " + W
 MONEY = bold + O + "[$] " + W
 PROMPT = bold + P + "[?] " + W
 
+TRUNCATE = 6  # Bytes to truncate hash at (48-bites)
 
-def create_index(fword, fout, hash_algorithms, flock):
+
+def compute_entry(fword, fout, hash_algorithms, flock):
     ''' Create an index and write to file '''
     line = fword.readline()
     while line:
-        word = line[:-1] if line.endswith('\n') else line
+        word = line[:-1] if line.endswith(b'\n') else line
         try:
             results = {"preimage": word.decode()}
             for name, algo in hash_algorithms.items():
-                results[name] = b64encode(algo(word).digest()).decode()
+                results[name] = b64encode(algo(word).digest()[:TRUNCATE]).decode()
             data = json.dumps(results)+"\n"
             flock.acquire()
             fout.write(data.encode())
@@ -99,7 +101,7 @@ def index_wordlist(fword, fout, hash_algorithms, flock):
     try:
         thread = threading.Thread(target=display_status, args=(fword, fout, flock))
         thread.start()
-        create_index(fword, fout, hash_algorithms, flock)
+        compute_entry(fword, fout, hash_algorithms, flock)
     except KeyboardInterrupt:
         sys.stdout.write(clear + WARN + 'User requested stop ...\n')
         return
@@ -141,10 +143,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Create unsorted IDX files')
-    parser.add_argument('-v', '--version',
-        action='version',
-        version='Create IDX 0.1.1')
+        description='Create unsorted json files')
     parser.add_argument('-w',
         dest='wordlist',
         help='index passwords from text file',

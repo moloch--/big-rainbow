@@ -49,7 +49,9 @@ class KeyspaceGenerator(object):
 
     @classmethod
     def to_base_n(cls, x, charset):
-        ''' Convert a number `x` to base `n` str where `n` is the len of the charset '''
+        '''
+        Convert a number `x` to base `n` str where `n` is the len of the charset
+        '''
         base = len(charset)
         if x < base:
             return charset[x]
