@@ -1,1 +1,1 @@
-# Masscat Elastic Beanstalk Spot Instance Configuration
+# Distgen Elastic Beanstalk Spot Instance Configuration

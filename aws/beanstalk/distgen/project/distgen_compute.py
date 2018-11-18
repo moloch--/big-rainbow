@@ -9,6 +9,7 @@ import time
 import json
 import logging
 import argparse
+import  multiprocessing as mp
 
 from os import getcwd, _exit
 from binascii import hexlify
@@ -45,28 +46,46 @@ def compute_keyspace(start, stop, hash_algorithms, charset, fout):
         fout.write(data)
 
 
-def main(args):
-    logging.info('Starting big rainbow dist-gen')
-    charset = KeyspaceGenerator.DEFAULT_CHARSET if args.charset is None else args.charset
-    hash_algorithms = get_hash_algorithms(args)
+def start_worker(worker_id, sqs_queue_name, s3_bucket, algorithms='all', charset=None):
+    ''' Excuted as a worker process '''
     
-    sqs = boto3.resource('sqs')
     s3 = boto3.client('s3')
+    sqs = boto3.resource('sqs')
+    sqs_queue = sqs.get_queue_by_name(QueueName=sqs_queue_name)
+    charset = KeyspaceGenerator.DEFAULT_CHARSET if charset is None else charset
+    hash_algorithms = get_hash_algorithms(algorithms)
 
-    queue = sqs.get_queue_by_name(QueueName=args.sqs_queue)
-    for message in queue.receive_messages():
-        logging.info("Processing msg: %s", message)
-        msg = json.loads(message)
-        fname = "generated_keyspace_{}_{}.json".format(msg['start'], msg['stop'])
-        fpath = os.path.join(args.output, fname)
-        with open(fpath, 'w') as fout:
-            compute_keyspace(msg['start'], msg['stop'], hash_algorithms, charset, fout)
-        message.delete()
-        with open(fpath, 'r') as fp:
-            logging.info("S3 Put '%s' -> %s:%s", fpath, args.s3_bucket, fname)
-            s3.put_object(bucket=args.s3_bucket, key=fname, body=fp.read())
-        logging.info("Unlink '%s'", fpath)
-        os.unlink(fpath) 
+    for messages in sqs_queue.receive_messages(MaxNumberOfMessages=1):
+        logging.info('Recieved message(s): %r', messages)
+        message = messages[0]  # We should only get one at a time
+        try:
+            block = json.loads(message.Body)
+            fname = "generated_keyspace_{}_{}.json".format(block['start'], block['stop'])
+            fpath = os.path.join(getcwd(), fname)
+            with open(fpath, 'w') as fout:
+                compute_keyspace(block['start'], block['stop'], hash_algorithms, charset, fout)
+            with open(fpath, 'r') as fout:
+                logging.info("S3 Put '%s' -> %s:%s", fpath, s3_bucket, fname)
+                s3.put_object(bucket=s3_bucket, key=fname, body=fout.read())
+            os.unlink(fpath)
+            sqs_queue.delete_messages(Entries=[{
+                'Id': message['Id'],
+                'ReceiptHandle': message['ReceiptHandle'],
+            }])
+        except:
+            logging.exception('Error in worker process')
+
+def main(args):
+    ''' Starts worker processes '''
+    logging.info('Starting big rainbow dist-gen')
+    workers = []
+    logging.info('Starting %d worker processes', mp.cpu_count())
+    for worker_id in range(mp.cpu_count()):
+        worker = mp.Process(target=start_worker, 
+                            args=(worker_id, args.sqs_queue, args.s3_bucket))
+        worker.start()
+        workers.append(worker)
+    [worker.join() for worker in workers]       
 
 
 if __name__ == '__main__':
@@ -78,11 +97,6 @@ if __name__ == '__main__':
         dest='algorithms',
         default='all',
         help='hashing algorithm to use: %s' % (['all']+ sorted(algorithms.keys())))
-
-    parser.add_argument('-o',
-        dest='output',
-        default=getcwd(),
-        help='output file to write data to')
 
     parser.add_argument('-Q',
         dest='sqs_queue',

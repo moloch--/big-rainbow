@@ -1,2 +1,7 @@
+*.zip
+
 *.yml
 *.yaml
+
+./tmp/
+./tmp/*
