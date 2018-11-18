@@ -1,4 +1,4 @@
 #!/bin/bash
 
-python3 healthcheck.py &
-python3 dist_gencompute.py
+python3 /opt/distgen/healthcheck.py &
+python3 /opt/distgen/distgen_compute.py
