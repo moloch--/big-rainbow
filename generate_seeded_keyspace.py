@@ -45,7 +45,7 @@ class KeyspaceGenerator(object):
 
     @classmethod
     def keyspace_length(cls, seed, charset):
-        return len(charset) ** len(seed)
+        return (len(charset) ** len(seed)) - 1
 
     @classmethod
     def to_base_n(cls, x, charset):

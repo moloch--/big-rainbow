@@ -108,5 +108,4 @@ if __name__ == '__main__':
         dest='charset',
         help='generate keyspace using a given charset',
         default=None)
-    args = parser.parse_args()
-    main(args)
+    main(parser.parse_args())
