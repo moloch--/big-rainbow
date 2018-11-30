@@ -56,6 +56,7 @@ def start_worker(worker_id, sqs_queue_name, s3_bucket, algorithm_names=None, cha
     charset = KeyspaceGenerator.DEFAULT_CHARSET if charset is None else charset
     algorithm_names = ['all'] if algorithm_names is None else algorithm_names
     hash_algorithms = get_hash_algorithms(algorithm_names)
+
     while True:
         for message in sqs_queue.receive_messages():
             print('Recieved message(s): %r' % message)

@@ -1,6 +1,0 @@
-apple
-password
-orange
-password2
-monkey
-winter2017

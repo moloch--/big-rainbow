@@ -47,8 +47,8 @@ def compute_keyspace(start, stop, hash_algorithms, fout):
         fout.write(data)
 
 
-def start_worker(worker_id, queue, hash_algorithms, output):
-    fname = "generated_keyspace_%s.json" % (worker_id)
+def start_worker(worker_id, queue, chars_len, hash_algorithms, output):
+    fname = "generated_keyspace_%s_%s.json" % (chars_len, worker_id)
     fout = open(os.path.join(output, fname), 'w')
     while not queue.empty():
         start, stop = queue.get()
@@ -62,7 +62,9 @@ def main(args):
     queue = mp.Queue()
     keyspace_len = KeyspaceGenerator.keyspace_length('0'*args.chars_len, charset)
     
-    block_size = keyspace_len // MAX_SIZE
+    block_size = (keyspace_len // MAX_SIZE) + 1
+    if block_size < 1:
+        block_size = 1
 
     print('Keyspace is %d' % keyspace_len)
     print('Block size is %d' % block_size)
@@ -79,7 +81,7 @@ def main(args):
     workers = []
     for worker_id in range(mp.cpu_count()):
         worker = mp.Process(target=start_worker, 
-                            args=(worker_id, queue, hash_algorithms, args.output))
+                            args=(worker_id, queue, args.chars_len, hash_algorithms, args.output))
         worker.start()
         workers.append(worker)
     [worker.join() for worker in workers]

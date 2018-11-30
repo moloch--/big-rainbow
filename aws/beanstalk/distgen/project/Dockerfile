@@ -11,7 +11,7 @@ WORKDIR /tmp
 RUN wget https://www.python.org/ftp/python/3.7.1/Python-3.7.1.tgz
 RUN tar -xzvf Python-3.7.1.tgz
 WORKDIR /tmp/Python-3.7.1
-RUN ./configure --enable-optimizations && make && make install
+RUN ./configure && make && make install
 WORKDIR /tmp
 RUN rm -rf /tmp/Python-3.7.1
 
