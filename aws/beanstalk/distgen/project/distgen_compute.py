@@ -81,10 +81,18 @@ def main(args):
     print('Starting %d worker processes' % mp.cpu_count())
     for worker_id in range(mp.cpu_count()):
         worker = mp.Process(target=start_worker, 
-                            args=(worker_id, args.sqs_queue, args.s3_bucket))
+                            args=(worker_id, args.sqs_queue, args.s3_bucket, args.algorithms))
         worker.start()
         workers.append(worker)
     [worker.join() for worker in workers]       
+
+
+def get_default_algorithms():
+    env_algos = os.environ.get('DISTGEN_ALGORITHMS', None)
+    if env_algos is None or env_algos == '':
+        return ['all']
+    else:
+        return env_algos.split(' ')
 
 
 if __name__ == '__main__':
@@ -94,7 +102,7 @@ if __name__ == '__main__':
     parser.add_argument('-a',
         nargs='*',
         dest='algorithms',
-        default=['all'],
+        default=get_default_algorithms(),
         help='hashing algorithm to use: %s' % (['all']+ sorted(algorithms.keys())))
 
     parser.add_argument('-Q',
