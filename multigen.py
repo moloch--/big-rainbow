@@ -63,8 +63,6 @@ def main(args):
     keyspace_len = KeyspaceGenerator.keyspace_length('0'*args.chars_len, charset)
     
     block_size = (keyspace_len // MAX_SIZE) + 1
-    if block_size < 1:
-        block_size = 1
 
     print('Keyspace is %d' % keyspace_len)
     print('Block size is %d' % block_size)
