@@ -46,6 +46,13 @@ def compute_keyspace(start, stop, hash_algorithms, fout):
         fout.write(data)
 
 
+def compute_single_entry(word, hash_algorithms):
+    results = {"preimage": word}
+    for name, algo in hash_algorithms.items():
+        results[name] = b64encode(algo(word.encode()).digest()[:TRUNCATE]).decode()
+    return json.dumps(results)+"\n"
+
+
 def start_worker(worker_id, queue, chars_len, hash_algorithms, output):
     fname = "generated_keyspace_%s_%s.json" % (chars_len, worker_id)
     fout = open(os.path.join(output, fname), 'w')
@@ -53,6 +60,15 @@ def start_worker(worker_id, queue, chars_len, hash_algorithms, output):
         start, stop = queue.get()
         compute_keyspace(start, stop, hash_algorithms, fout)
     fout.close()
+
+
+def sizeof_fmt(num, suffix='B'):
+    ''' https://stackoverflow.com/questions/1094841/reusable-library-to-get-human-readable-version-of-file-size '''
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
 def main(args):
@@ -67,10 +83,22 @@ def main(args):
     else:
         start = KeyspaceGenerator.keyspace_length(z*(args.chars_len-1), charset) + 1
 
+    if args.skip is not None and start + abs(args.skip) < end:
+        start += abs(args.skip)
+    if args.limit is not None and start + abs(args.limit) <= end:
+        end = start + abs(args.limit)
+
     block_size = (end // MAX_SIZE) + 1
 
-    print('Keyspace is %d -> %d' % (start, end))
+    print('Keyspace is %d -> %d (%s entries)' % (start, end, end-start))
+
+    # For inclusive spaces we'll end up over estimating a little but whatever
+    file_size = (end-start) * len(compute_single_entry(z*args.chars_len, hash_algorithms))
+    print('Estimated output is %d bytes (%s)' % (file_size, sizeof_fmt(file_size)))
+
     print('Block size is %d' % block_size)
+    if args.keyspace_only:
+        sys.exit()
 
     for index, block_start in enumerate(range(start, end, block_size)):
         queue.put((block_start, block_start+block_size))
@@ -94,28 +122,45 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Create JSON keyspaces for hashes')
-    parser.add_argument('-a',
+    parser.add_argument('-a', '--algorithms',
         nargs='*',
         dest='algorithms',
         help='hashing algorithm to use: %s' % (['all']+ sorted(algorithms.keys())),
         required=True)
-    parser.add_argument('-o',
+    parser.add_argument('-o', '--output',
         dest='output',
         default=getcwd(),
         help='output directory to write data to')
-    parser.add_argument('-k',
+    
+    parser.add_argument('-k', '--keyspace',
         type=int,
         dest='chars_len',
         help='generate keyspace for `n` chars',
         required=True)
-    parser.add_argument('-c',
+    parser.add_argument('-s', '--skip',
+        type=int,
+        dest='skip',
+        default=None,
+        help='skip first `n` entries of a given keyspace')
+    parser.add_argument('-l', '--limit',
+        type=int,
+        dest='limit',
+        default=None,
+        help='limit work to `n` entires from start')
+
+    parser.add_argument('-c', '--charset',
         type=str,
         dest='charset',
         help='generate keyspace using a given charset',
         default=None)
-    parser.add_argument('-i',
+    parser.add_argument('-i', '--inclusive',
         type=bool,
         dest='inclusive',
         help='generate entire keyspace inclusively (e.g. 1 char, 2 char ...)',
+        default=False)
+    parser.add_argument('-K', '--keyspace-only',
+        action='store_true',
+        dest='keyspace_only',
+        help='calculate the keyspace and exit',
         default=False)
     main(parser.parse_args())
