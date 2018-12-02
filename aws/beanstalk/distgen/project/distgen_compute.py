@@ -51,8 +51,8 @@ def start_worker(worker_id, sqs_queue_name, s3_bucket, algorithm_names=None, cha
     ''' Excuted as a worker process '''
     
     s3 = boto3.client('s3')
-    sqs = boto3.resource('sqs')
-    sqs_queue = sqs.get_queue_by_name(QueueName=sqs_queue_name)
+    sqs = boto3.resource('sqs', region_name=os.environ.get('AWS_REGION', 'us-west-2'))
+    sqs_queue = sqs.get_queue_by_name(QueueName=sqs_queue_name, region_name=os.environ.get('AWS_REGION', 'us-west-2'))
     charset = KeyspaceGenerator.DEFAULT_CHARSET if charset is None else charset
     algorithm_names = ['all'] if algorithm_names is None else algorithm_names
     hash_algorithms = get_hash_algorithms(algorithm_names)

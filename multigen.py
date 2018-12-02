@@ -8,7 +8,6 @@ import sys
 import time
 import json
 import argparse
-import threading
 import  multiprocessing as mp
 
 from os import getcwd, _exit
@@ -60,14 +59,20 @@ def main(args):
     charset = KeyspaceGenerator.DEFAULT_CHARSET if args.charset is None else args.charset
     hash_algorithms = get_hash_algorithms(args)
     queue = mp.Queue()
-    keyspace_len = KeyspaceGenerator.keyspace_length('0'*args.chars_len, charset)
     
-    block_size = (keyspace_len // MAX_SIZE) + 1
+    z = charset[0]  # zero symbol
+    end = KeyspaceGenerator.keyspace_length(z*args.chars_len, charset)
+    if args.inclusive:
+        start = 0
+    else:
+        start = KeyspaceGenerator.keyspace_length(z*(args.chars_len-1), charset) + 1
 
-    print('Keyspace is %d' % keyspace_len)
+    block_size = (end // MAX_SIZE) + 1
+
+    print('Keyspace is %d -> %d' % (start, end))
     print('Block size is %d' % block_size)
 
-    for index, block_start in enumerate(range(0, keyspace_len, block_size)):
+    for index, block_start in enumerate(range(start, end, block_size)):
         queue.put((block_start, block_start+block_size))
         sys.stdout.write(CLEAR)
         sys.stdout.write('Generated {} block ({} -> {}) ...'.format(
@@ -108,4 +113,9 @@ if __name__ == '__main__':
         dest='charset',
         help='generate keyspace using a given charset',
         default=None)
+    parser.add_argument('-i',
+        type=bool,
+        dest='inclusive',
+        help='generate entire keyspace inclusively (e.g. 1 char, 2 char ...)',
+        default=False)
     main(parser.parse_args())

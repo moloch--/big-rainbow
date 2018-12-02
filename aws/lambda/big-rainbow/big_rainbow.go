@@ -136,6 +136,7 @@ func truncate(querySet *QuerySet) {
 		hashes = append(hashes, hash)
 	}
 	querySet.Hashes = hashes
+	// log.Printf("Query Set: %v", querySet.Hashes)
 }
 
 func main() {
